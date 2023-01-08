@@ -3,6 +3,7 @@ using OnvifDiscovery.Interfaces;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OnvifDiscovery.Client
@@ -31,6 +32,15 @@ namespace OnvifDiscovery.Client
 		public async Task<UdpReceiveResult> ReceiveAsync ()
 		{
 			return await client.ReceiveAsync ();
+		}
+
+		public Task<UdpReceiveResult> ReceiveAsync (CancellationToken cancellationToken)
+		{
+#if NET6_0_OR_GREATER
+			return client.ReceiveAsync (cancellationToken).AsTask ();
+#else
+			return client.ReceiveAsync ().WithCancellation (cancellationToken);
+#endif
 		}
 
 		public void Close ()

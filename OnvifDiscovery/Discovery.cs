@@ -93,17 +93,17 @@ namespace OnvifDiscovery
 		{
 			Guid messageId = Guid.NewGuid ();
 			var responses = new List<UdpReceiveResult> ();
-			var cts = new CancellationTokenSource (TimeSpan.FromSeconds (timeout));
+
+			using var cts = new CancellationTokenSource (TimeSpan.FromSeconds (timeout));
+			using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource (cancellationToken, cts.Token);
 
 			try {
 				await SendProbe (client, messageId);
 				while (true) {
-					if (cts.IsCancellationRequested || cancellationToken.IsCancellationRequested)
+					if (linkedCts.IsCancellationRequested)
 						break;
 					try {
-						var response = await client.ReceiveAsync ()
-										.WithCancellation (cancellationToken)
-										.WithCancellation (cts.Token);
+						var response = await client.ReceiveAsync (linkedCts.Token);
 
 						if (IsAlreadyDiscovered (response, responses))
 							continue;

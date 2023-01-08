@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OnvifDiscovery.Interfaces
@@ -23,6 +24,13 @@ namespace OnvifDiscovery.Interfaces
 		/// </summary>
 		/// <returns>the udp receive result</returns>
 		Task<UdpReceiveResult> ReceiveAsync ();
+
+		/// <summary>
+		/// Receive a <see cref="UdpReceiveResult"/>
+		/// </summary>
+		/// <param name="cancellationToken">cancellationToken</param>
+		/// <returns>the udp receive result</returns>
+		Task<UdpReceiveResult> ReceiveAsync (CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Close the socket
