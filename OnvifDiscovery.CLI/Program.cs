@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using OnvifDiscovery.Models;
@@ -33,7 +36,27 @@ namespace OnvifDiscovery.CLI
 
 		private static void OnNewDevice (DiscoveryDevice device)
 		{
-			Log.Information ("Device discovered: {@device}", device);
+			var deviceIp = device.Address;
+
+			var devicePort =
+				(from addr in device.XAdresses
+				 let x = Uri.TryCreate (addr, UriKind.Absolute, out var uri) ? (isUri: true, uri) : (false, null)
+				 where x.isUri && x.uri.Host == deviceIp
+				 select x.uri.Port).DefaultIfEmpty (80).First ();
+
+			var deviceMac =
+				(from scope in device.Scopes
+				 let x = Uri.TryCreate (scope, UriKind.Absolute, out var uri) ? (isUri: true, uri) : (false, null)
+				 where x.isUri && x.uri.AbsolutePath.StartsWith("/mac", StringComparison.InvariantCultureIgnoreCase)
+				 let macSegment = x.uri.Segments.Last()
+				 let mac = Regex.Replace (macSegment, "-|:", "").ToUpperInvariant ()
+				 select mac).FirstOrDefault ();
+
+			var onvifFoundDevice = new OnvifFoundDevice (deviceIp, devicePort, device.Model, device.Mfr, deviceMac);
+
+			Log.Information ("Device discovered: {device}", onvifFoundDevice);
 		}
 	}
+
+	public record OnvifFoundDevice (string Host, int HttpPort, string Model, string Manufacturer, string MacAddress);
 }
